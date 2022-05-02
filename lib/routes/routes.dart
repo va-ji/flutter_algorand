@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:user_onboarding/widgets/common/common.dart';
 
 import '../screens/screens.dart';
+import '../helpers/Logger/logger.dart';
 export './loginRouter.dart';
 
 class Routes {
@@ -21,6 +22,7 @@ class Routes {
 
   Future<String> get accessToken async {
     final prefs = await SharedPreferences.getInstance();
+    logger.i(prefs.getString('accessToken').toString());
     if (!prefs.containsKey('accessToken')) return '';
     var token = prefs.getString('accessToken');
     return token ?? '';
@@ -36,6 +38,7 @@ class Routes {
               return const LoadingScreen('');
             }
             if (tokenSnapshot.data == '') return screen;
+
             return Home();
           },
         );
@@ -80,7 +83,15 @@ class Routes {
     );
     _defineRoute(
       Home.route,
-      authenicatedRoute(Home()),
+      unAuthenticatedRoute(Home()),
+    );
+    _defineRoute(
+      CompleteService.route,
+      unAuthenticatedRoute(const CompleteService()),
+    );
+    _defineRoute(
+      CreateCharity.route,
+      unAuthenticatedRoute(const CreateCharity()),
     );
     _defineRoute(
       ChangePassword.route,
