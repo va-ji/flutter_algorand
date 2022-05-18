@@ -1,10 +1,16 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:algorand_dart/algorand_dart.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:crypto/crypto.dart';
+import 'package:user_onboarding/models/charityModel/charityModel.dart';
+import 'package:user_onboarding/widgets/widgets.dart';
 
 import '../../constants/constants.dart';
 import '../../helpers/Logger/logger.dart';
+import '../../providers/providers.dart';
 
 class KeyModel {
   final String publicAddress;
@@ -21,151 +27,337 @@ class CreateCharity extends StatefulWidget {
 }
 
 class _CreateCharityState extends State<CreateCharity> {
-  String? _publicAddress;
-  Account?
-      _account; //J6HBFQVQGJV5LBDVOZWGRJ5JYPDV55CCFE26GB4VHBPRODTKVAXV4Q7PHU
-  List<String>? _seed = [
-    'achieve',
-    'occur',
-    'various',
-    'speak',
-    'normal',
-    'owner',
-    'bargain',
-    'sauce',
-    'voice',
-    'excess',
-    'skill',
-    'illegal',
-    'traffic',
-    'mule',
-    'stove',
-    'entry',
-    'butter',
-    'green',
-    'scale',
-    'pear',
-    'motor',
-    'blood',
-    'that',
-    'about',
-    'carpet'
-  ];
-  // final Address _escrowAccountAdd = Address(
-  //     publicKey: Uint8List.fromList(
-  //         '2RB4VJM252ANMH3RZF7GOVNVB2K3D4CDUSW2FLAFORVTPP5UCO4T4ZFQ4Q'
-  //             .codeUnits));
-  @override
-  Widget build(BuildContext context) {
-    final algodClient = AlgodClient(
-      apiUrl: PureStake.TESTNET_ALGOD_API_URL,
-      apiKey: Constants.apiKey,
-      tokenKey: PureStake.API_TOKEN_HEADER,
-    );
+  final ImagePicker _picker = ImagePicker();
+  final GlobalKey<FormState> _key = GlobalKey<FormState>();
+  final _textAssetName = TextEditingController();
+  final _textUnitName = TextEditingController();
+  final _textDescription = TextEditingController();
+  final _textIpfsUrl = TextEditingController();
+  final _textPrice = TextEditingController();
+  final _focusUnitName = FocusNode();
+  final _focusDescription = FocusNode();
+  final _focusipfs = FocusNode();
+  final _focusPrice = FocusNode();
+  late Algorand _algorand;
+  AssetConfigTransaction? _tx;
+  String? assetName;
+  String? unitName;
+  String? description;
+  String? url;
+  int? price;
+  XFile? image;
+  int? assetId;
+  var _assetCreated = false;
+  var _loading = false;
 
-    final indexerClient = IndexerClient(
-      apiUrl: PureStake.TESTNET_INDEXER_API_URL,
-      apiKey: Constants.apiKey,
-      tokenKey: PureStake.API_TOKEN_HEADER,
-    );
+  Future<void> sendToescrow() async {
+    logger.i("asset Id", assetId);
+    if (assetId == null) {
+      throw 'Asset id is null';
+    }
+    const escrowAccountAddr = Constants.escrowadd;
+    final algorand = Provider.of<CharityDataProvider>(context, listen: false)
+        .getAlgoinstance;
+    final accountModel =
+        Provider.of<CharityDataProvider>(context, listen: false)
+            .getCurrentAccount;
+    try {
+      await algorand!.assetManager.transfer(
+        assetId: assetId!,
+        account: accountModel!.account,
+        receiver: Address.fromAlgorandAddress(address: escrowAccountAddr),
+        amount: 1,
+      );
 
-    final kmdClient = KmdClient(
-      apiUrl: '127.0.0.1',
-      apiKey: Constants.apiKey,
-    );
+      final transactionId = await algorand.sendPayment(
+        account: accountModel.account,
+        recipient: Address.fromAlgorandAddress(address: escrowAccountAddr),
+        amount: Algo.toMicroAlgos(price!.toDouble()),
+        note: 'Charity: $assetName',
+        waitForConfirmation: true,
+        timeout: 3,
+      );
 
-    final algorand = Algorand(
-      algodClient: algodClient,
-      indexerClient: indexerClient,
-      kmdClient: kmdClient,
-    );
-
-    Future<KeyModel> createAccount(Account account) async {
-      final seed = await account.seedPhrase;
-      final model =
-          KeyModel(publicAddress: account.publicAddress, mnemonic: seed);
-      return model;
+      logger.i('Transaction id:', transactionId);
+    } on AlgorandException catch (e) {
+      logger.e('Alogrand error', e.message.toString());
     }
 
-    Future<void> createCharityAsset() async {
-      final params = await algorand.getSuggestedTransactionParams();
+    logger.i('sent asset to escrow acc');
+  }
 
-      // Create the asset
+  Future<void> createCharityAsset() async {
+    if (_key.currentState == null) {
+      throw 'form is null';
+    } else {
+      _key.currentState!.save();
+
+      final accountModel =
+          Provider.of<CharityDataProvider>(context, listen: false)
+              .getCurrentAccount;
+      final params = await _algorand.getSuggestedTransactionParams();
+      final metaData = {
+        "standard": "arc69",
+        "description": description ?? '',
+        "external_url": url ?? '',
+        "mime_type": "plain/text",
+      };
+      final metaHash = Uint8List.fromList(sha256
+          .convert(utf8.encode(const JsonEncoder().convert(metaData)))
+          .bytes);
       //transaction id: 86437063
       try {
-        final tx = await (AssetConfigTransactionBuilder()
-              ..sender = _account!.address
+        _tx = await (AssetConfigTransactionBuilder()
+              ..sender = accountModel!.account.address
               ..totalAssetsToCreate = 1
               ..decimals = 0
-              ..unitName = 'Rubbish'
-              ..assetName = 'Cleaning out the rubbish'
-              ..url =
-                  'https://ipfs.io/ipfs/QmNek7wVeksgqb3jKyduoahMu5ECvbFjSsGTpowndHtdiu?filename=rubbishcharity.jpg'
-              // ..metadataB64 = 'location 8C Lancaster avenue Newcomb'
+              ..unitName = unitName
+              ..assetName = assetName
+              ..url = url ?? ''
+              ..metaData = metaHash
               ..defaultFrozen = false
-              ..managerAddress = _account!.address
-              ..reserveAddress = _account!.address
-              ..freezeAddress = _account!.address
-              ..clawbackAddress = _account!.address
+              ..managerAddress = accountModel.account.address
+              ..reserveAddress = accountModel.account.address
               ..suggestedParams = params)
             .build();
-
-        // Sign the transaction
-        if (_account == null) {
-          logger.i("Account null");
-          return;
+        if (_tx == null) {
+          throw 'Transaction is null';
         }
-        final signedTx = await tx.sign(_account!);
+        // Sign the transaction
+        final signedTx = await _tx!.sign(accountModel.account);
         signedTx.signature;
-        final txId = await algorand.sendTransaction(signedTx);
-        final response = await algorand.waitForConfirmation(txId);
+        final txId = await _algorand.sendTransaction(signedTx);
+        final response = await _algorand.waitForConfirmation(txId);
+        assetId = response.assetIndex;
         logger.i('response', response.assetIndex);
+
+        _assetCreated = true;
       } on AlgorandException catch (e) {
         logger.i("Couldnt transfer asset to escrow account", e.message);
       }
-    }
 
+      if (_assetCreated) {
+        _assetCreated = false;
+        final charity = CharityModel(
+            title: assetName!,
+            description: description!,
+            donation: price!,
+            file: image!);
+
+        Provider.of<CharityDataProvider>(context, listen: false)
+            .addCharities(assetName!, description!, price!, image!);
+        Provider.of<CharityDataProvider>(context, listen: false)
+            .addCharityOwner(account: accountModel!, charity: charity);
+      }
+    }
+  }
+
+  @override
+  void initState() {
+    _algorand = Provider.of<CharityDataProvider>(context, listen: false)
+        .getAlgoinstance!;
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Create charity'),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: ElevatedButton(
-                  onPressed: () async {
-                    _account = await algorand.createAccount();
-                    final modelData = await createAccount(_account!);
-                    _publicAddress = modelData.publicAddress;
-                    _seed = modelData.mnemonic;
-                    // _account = await Account.fromSeedPhrase(_seed!);
-                    // _publicAddress = _account!.publicAddress;
-                    logger.i('Public address of charity owner', _publicAddress);
-                    // logger.i('Seed Phrase', _seed);
-                  },
-                  child: const Text(
-                    'Create Account',
-                    style: TextStyle(color: Colors.black),
-                  )),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: ElevatedButton(
-                onPressed: () async {
-                  await createCharityAsset();
-                },
-                child: const Text(
-                  'Create digital charity',
-                  style: TextStyle(color: Colors.black),
-                ),
+      drawer: Sidebar(),
+      body: _loading
+          ? const Center(
+              child: CircularProgressIndicator.adaptive(
+                backgroundColor: Colors.purple,
               ),
             )
-          ],
-        ),
-      ),
+          : Stack(children: [
+              Container(
+                decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                        color: Colors.grey.shade200,
+                        offset: const Offset(2, 4),
+                        blurRadius: 5,
+                        spreadRadius: 2)
+                  ],
+                  gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Colors.grey, Colors.black54]),
+                ),
+              ),
+              const Positioned(
+                top: 50,
+                left: 40,
+                child: Padding(
+                  padding: EdgeInsets.only(top: 3.0),
+                  child: Text(
+                    'Create your digital charity',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 100,
+                left: MediaQuery.of(context).size.width / 18,
+                child: SizedBox(
+                  height: 650,
+                  width: 370,
+                  child: Card(
+                    elevation: 15,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15)),
+                    color: Colors.white,
+                    child: Column(
+                      children: [
+                        Form(
+                          key: _key,
+                          child: Column(
+                            children: [
+                              FormWidget(
+                                  controller: _textAssetName,
+                                  focusNode: _focusUnitName,
+                                  keyboardType: TextInputType.text,
+                                  textInputAction: TextInputAction.next,
+                                  label: 'Asset Name',
+                                  onSaved: (value) {
+                                    assetName = value;
+                                  }),
+                              FormWidget(
+                                  controller: _textUnitName,
+                                  focusNode: _focusDescription,
+                                  keyboardType: TextInputType.text,
+                                  textInputAction: TextInputAction.next,
+                                  label: 'Unit Name',
+                                  onSaved: (value) {
+                                    unitName = value;
+                                  }),
+                              FormWidget(
+                                  controller: _textIpfsUrl,
+                                  focusNode: _focusipfs,
+                                  keyboardType: TextInputType.text,
+                                  textInputAction: TextInputAction.next,
+                                  label: 'Ipfs Url',
+                                  onSaved: (value) {
+                                    url = value;
+                                  }),
+                              FormWidget(
+                                  controller: _textDescription,
+                                  focusNode: _focusPrice,
+                                  keyboardType: TextInputType.multiline,
+                                  textInputAction: TextInputAction.next,
+                                  label: 'Description',
+                                  onSaved: (value) {
+                                    description = value;
+                                  }),
+                              FormWidget(
+                                  controller: _textPrice,
+                                  focusNode: null,
+                                  keyboardType: TextInputType.number,
+                                  textInputAction: TextInputAction.done,
+                                  label: 'Price',
+                                  onSaved: (value) {
+                                    price = int.parse(value!);
+                                  }),
+                            ],
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Row(
+                            children: [
+                              const Padding(
+                                padding: EdgeInsets.all(12.0),
+                                child: Text(
+                                  'Add a photo',
+                                  style: TextStyle(
+                                      color: Colors.black, fontSize: 18),
+                                ),
+                              ),
+                              IconButton(
+                                  iconSize: 40,
+                                  onPressed: () async {
+                                    // Pick an image
+                                    image = await _picker.pickImage(
+                                        source: ImageSource.gallery);
+                                  },
+                                  icon: const Icon(Icons.add_a_photo)),
+                            ],
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: InkWell(
+                            child: Container(
+                              height: 70,
+                              width: 300,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(15),
+                                border:
+                                    Border.all(color: Colors.black, width: 2),
+                                color: Colors.lightBlue,
+                              ),
+                              child: const Center(
+                                  child: Text(
+                                'Create digital Asset',
+                                style: TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold),
+                              )),
+                            ),
+                            onTap: () async {
+                              setState(() {
+                                _loading = true;
+                              });
+                              await createCharityAsset();
+                              setState(() {
+                                _loading = false;
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('Charity created!!!')),
+                              );
+                            },
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: InkWell(
+                            child: Container(
+                              height: 70,
+                              width: 300,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(15),
+                                border:
+                                    Border.all(color: Colors.black, width: 2),
+                                color: Colors.lightBlue,
+                              ),
+                              child: const Center(
+                                  child: Text(
+                                'Send Asset to charity escrow',
+                                style: TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold),
+                              )),
+                            ),
+                            onTap: () async {
+                              await sendToescrow();
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ]),
     );
   }
 }

@@ -29,5 +29,7 @@
             android:value="2" />
     </application>
     <uses-permission android:name="android.permission.INTERNET"/>
+     <!-- Provide required visibility configuration for API level 30 and above -->
+ 
 
 </manifest>

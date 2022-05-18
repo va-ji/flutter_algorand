@@ -6,3 +6,5 @@ export 'devEnvironment/devEnvironment.dart';
 export 'changePassword/changePassword.dart';
 export 'completeService/completeService.dart';
 export 'createCharity/createCharity.dart';
+export 'confirm/confirmAccount.dart';
+export 'charitiesScreen/CharityDes.dart';

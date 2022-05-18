@@ -1,5 +1,9 @@
+import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:user_onboarding/screens/completeService/completeService.dart';
+import 'package:user_onboarding/screens/createCharity/createCharity.dart';
+import 'package:user_onboarding/screens/home/home.dart';
 
 import '../../../constants/constants.dart';
 import '../../../helpers/helpers.dart';
@@ -18,10 +22,11 @@ class LoginForm extends StatefulWidget {
 }
 
 class _LoginFormState extends State<LoginForm> {
-  bool _devModeSwitchValue = false;
   final _passwordFocusNode = FocusNode();
   final _usernameFocusNode = FocusNode();
   final LoginAPIBody loginValues = LoginAPIBody();
+  var cardOne = false;
+  var cardTwo = false;
 
   Widget _textField(
     String title, {
@@ -42,7 +47,8 @@ class _LoginFormState extends State<LoginForm> {
         children: <Widget>[
           Text(
             title,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            style: const TextStyle(
+                fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white),
           ),
           const SizedBox(
             height: 10,
@@ -86,19 +92,13 @@ class _LoginFormState extends State<LoginForm> {
             gradient: const LinearGradient(
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
-                colors: [Color(0xfffbb448), Color(0xfff7892b)])),
+                colors: [Colors.purple, Colors.blueAccent])),
         child: const Text(
           'Login',
           style: TextStyle(fontSize: 20, color: Colors.white),
         ),
       ),
     );
-  }
-
-  void changeDevModeValue(bool value) {
-    setState(() {
-      _devModeSwitchValue = value;
-    });
   }
 
   Widget _emailPasswordWidget() {
@@ -145,21 +145,21 @@ class _LoginFormState extends State<LoginForm> {
     return RichText(
       textAlign: TextAlign.center,
       text: TextSpan(
-          text: 'flutter',
+          text: 'Charity',
           style: GoogleFonts.portLligatSans(
             textStyle: Theme.of(context).textTheme.headline1,
             fontSize: 30,
             fontWeight: FontWeight.w700,
-            color: Colors.black,
+            color: Colors.white,
           ),
           children: const [
             TextSpan(
-              text: 'base',
-              style: TextStyle(color: Colors.black54, fontSize: 30),
+              text: 'On',
+              style: TextStyle(color: Colors.white, fontSize: 30),
             ),
             TextSpan(
-              text: 'plate',
-              style: TextStyle(color: Colors.black, fontSize: 30),
+              text: 'Blocks',
+              style: TextStyle(color: Colors.white, fontSize: 30),
             ),
           ]),
     );
@@ -181,7 +181,10 @@ class _LoginFormState extends State<LoginForm> {
               ),
             ),
           ),
-          Text('or'),
+          Text(
+            'or',
+            style: TextStyle(color: Colors.white),
+          ),
           Expanded(
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: 10),
@@ -204,15 +207,18 @@ class _LoginFormState extends State<LoginForm> {
         Navigator.pushNamed(context, '/signup');
       },
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 20),
-        padding: const EdgeInsets.all(15),
+        margin: const EdgeInsets.symmetric(vertical: 5),
+        padding: const EdgeInsets.all(5),
         alignment: Alignment.bottomCenter,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: const <Widget>[
             Text(
               'Don\'t have an account ?',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white),
             ),
             SizedBox(
               width: 10,
@@ -230,6 +236,44 @@ class _LoginFormState extends State<LoginForm> {
     );
   }
 
+  Widget cardWidget(String asset, String title, double padding,
+      {required Function()? ontap, required var cardno}) {
+    return SizedBox(
+      height: 250,
+      width: 185,
+      child: InkWell(
+        child: Card(
+          color: cardno ? Colors.greenAccent : Colors.white,
+          shadowColor: Colors.white38,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          elevation: 10,
+          child: Column(
+            children: [
+              FittedBox(
+                child: Image.asset(
+                  asset,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.all(padding),
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold),
+                ),
+              )
+            ],
+          ),
+        ),
+        onTap: ontap,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     void performLogin(
@@ -238,19 +282,27 @@ class _LoginFormState extends State<LoginForm> {
         debugPrint('emptyformkey');
       } else if (widget.formKey.currentState!.validate()) {
         widget.formKey.currentState!.save();
-        DIOResponseBody response;
-        if (_devModeSwitchValue) {
-          response = await API().userLogin(Constants.devUser);
-        } else {
-          response = await API().userLogin(loginValues);
-        }
-        if (response.success) {
-          assignToken(response.data['accessToken']);
-          Navigator.of(context).popUntil((route) => route.isFirst);
+        SignInResult response;
+
+        response = await UserAuth().signInUser(
+            username: loginValues.username!, password: loginValues.password!);
+
+        if (response.isSignedIn) {
+          final token = await UserAuth.accessToken;
+          assignToken(token);
+          if (cardOne) {
+            Provider.of<CharityDataProvider>(context, listen: false)
+                .isAccountCreator(true);
+          }
+          if (cardTwo) {
+            Provider.of<CharityDataProvider>(context, listen: false)
+                .isAccountCreator(false);
+          }
+          Navigator.of(context).pushNamed(Home.route);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(response.data),
+            const SnackBar(
+              content: Text('Not signed in'),
             ),
           );
         }
@@ -263,11 +315,37 @@ class _LoginFormState extends State<LoginForm> {
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
-          SizedBox(height: widget.height * .2),
+          const SizedBox(
+            height: 70,
+          ),
           _title(),
-          const SizedBox(height: 50),
+
+          Padding(
+            padding: const EdgeInsets.only(top: 15.0, bottom: 5),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                cardWidget(
+                    'lib/assets/charity/avatar1.png', 'Create a charity', 20,
+                    ontap: () {
+                  setState(() {
+                    cardOne = true;
+                    cardTwo = false;
+                  });
+                  logger.i(cardOne);
+                }, cardno: cardOne),
+                cardWidget(
+                    'lib/assets/charity/avatar2.png', 'Complete a charity', 5,
+                    ontap: () {
+                  setState(() {
+                    cardOne = false;
+                    cardTwo = true;
+                  });
+                }, cardno: cardTwo),
+              ],
+            ),
+          ),
           _emailPasswordWidget(),
-          const SizedBox(height: 20),
           Consumer<UserDataProvider>(
             builder: (_, data, __) => _loginButton(
               () {
@@ -285,10 +363,13 @@ class _LoginFormState extends State<LoginForm> {
             padding: const EdgeInsets.symmetric(vertical: 10),
             alignment: Alignment.centerRight,
             child: const Text('Forgot Password ?',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white)),
           ),
           _divider(),
-          SizedBox(height: widget.height * .055),
+          // SizedBox(height: widget.height * .005),
           _createAccountLabel(),
         ],
       ),

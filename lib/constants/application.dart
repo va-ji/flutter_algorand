@@ -1,6 +1,5 @@
 class ApplicationConstants {
-  final String title = "useronboarding";
+  final String title = "Charity app";
   final String version = "0.0.1";
-  final String author = 'Deakin Launchpad';
-  final String copyright = "Deakin Launchpad 2021";
+  final String author = 'Hackathon Dapp';
 }

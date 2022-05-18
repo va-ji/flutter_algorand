@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fluro/fluro.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:user_onboarding/helpers/helpers.dart';
 import 'package:user_onboarding/widgets/common/common.dart';
 
 import '../screens/screens.dart';
@@ -32,10 +33,14 @@ class Routes {
     return Handler(
       handlerFunc: (context, params) {
         return FutureBuilder(
-          future: accessToken,
+          future: UserAuth.accessToken,
           builder: (context, tokenSnapshot) {
             if (tokenSnapshot.connectionState == ConnectionState.waiting) {
-              return const LoadingScreen('');
+              return const Center(
+                child: CircularProgressIndicator.adaptive(
+                  backgroundColor: Colors.purple,
+                ),
+              );
             }
             if (tokenSnapshot.data == '') return screen;
 
@@ -46,14 +51,18 @@ class Routes {
     );
   }
 
-  Handler authenicatedRoute(Widget screen) {
+  Handler authenticatedRoute(Widget screen) {
     return Handler(
       handlerFunc: (context, params) {
         return FutureBuilder(
-          future: accessToken,
+          future: UserAuth.accessToken,
           builder: (context, tokenSnapshot) {
             if (tokenSnapshot.connectionState == ConnectionState.waiting) {
-              return const LoadingScreen('');
+              return const Center(
+                child: CircularProgressIndicator.adaptive(
+                  backgroundColor: Colors.purple,
+                ),
+              );
             }
             if (tokenSnapshot.data == '') return const WelcomePage();
             return screen;
@@ -66,6 +75,15 @@ class Routes {
   void _defineRoute(String route, Handler handler,
       {transitionType = TransitionType.material}) {
     _router.define(route, handler: handler, transitionType: transitionType);
+  }
+
+  Handler confirmAccountRoute() {
+    return Handler(handlerFunc: (context, params) {
+      return ConfirmAccount(
+        email: params['email']![0],
+        password: params['password']![0],
+      );
+    });
   }
 
   void configureRoutes() {
@@ -82,24 +100,33 @@ class Routes {
       unAuthenticatedRoute(SignUp()),
     );
     _defineRoute(
+      ConfirmAccount.route,
+      confirmAccountRoute(),
+    );
+    _defineRoute(
       Home.route,
-      unAuthenticatedRoute(Home()),
+      authenticatedRoute(Home()),
     );
     _defineRoute(
       CompleteService.route,
-      unAuthenticatedRoute(const CompleteService()),
+      authenticatedRoute(const CompleteService()),
+    );
+
+    _defineRoute(
+      CharityDes.route,
+      authenticatedRoute(const CharityDes()),
     );
     _defineRoute(
       CreateCharity.route,
-      unAuthenticatedRoute(const CreateCharity()),
+      authenticatedRoute(const CreateCharity()),
     );
     _defineRoute(
       ChangePassword.route,
-      authenicatedRoute(ChangePassword()),
+      authenticatedRoute(ChangePassword()),
     );
     _defineRoute(
       DevEnvironment.route,
-      authenicatedRoute(DevEnvironment()),
+      authenticatedRoute(DevEnvironment()),
     );
   }
 

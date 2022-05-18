@@ -1,8 +1,16 @@
+import 'package:image_picker/image_picker.dart';
+
 class CharityModel {
   final String title;
   final String description;
-  final String url;
+  final int donation;
+  final XFile? file;
+  final String? path;
 
   CharityModel(
-      {required this.title, required this.description, required this.url});
+      {required this.title,
+      required this.description,
+      required this.donation,
+      this.file,
+      this.path});
 }
