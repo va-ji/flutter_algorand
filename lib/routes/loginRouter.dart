@@ -11,13 +11,13 @@ class LoginRouter extends StatefulWidget {
 class _LoginRouterState extends State<LoginRouter> {
   @override
   void initState() {
-    Provider.of<UserDataProvider>(context, listen: false)
-        .accessTokenLogin()
-        .then((value) {
-      if (value) {
-        Provider.of<UserDataProvider>(context, listen: false).getUserProfile();
-      }
-    });
+    // Provider.of<UserDataProvider>(context, listen: false)
+    //     .accessTokenLogin()
+    //     .then((value) {
+    //   if (value) {
+    //     Provider.of<UserDataProvider>(context, listen: false).getUserProfile();
+    //   }
+    // });
     super.initState();
   }
 

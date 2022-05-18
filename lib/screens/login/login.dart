@@ -33,10 +33,13 @@ class Login extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.only(left: 0, top: 10, bottom: 10),
                 child:
-                    const Icon(Icons.keyboard_arrow_left, color: Colors.black),
+                    const Icon(Icons.keyboard_arrow_left, color: Colors.white),
               ),
               const Text('Back',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500))
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white))
             ],
           ),
         ),
@@ -44,31 +47,39 @@ class Login extends StatelessWidget {
     }
 
     return Scaffold(
-      body: SizedBox(
-        height: height,
-        width: MediaQuery.of(context).size.width,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            if (MediaQuery.of(context).size.width < 786)
-              Positioned(
-                top: -height * .15,
-                right: -MediaQuery.of(context).size.width * .4,
-                child: const BezierContainer(),
-              ),
-            Container(
-              width: getFormWidth(context),
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: SingleChildScrollView(
+      body: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            height: height,
+            width: MediaQuery.of(context).size.width,
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.all(Radius.circular(5)),
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                    color: Colors.grey.shade200,
+                    offset: const Offset(2, 4),
+                    blurRadius: 5,
+                    spreadRadius: 2)
+              ],
+              gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Colors.grey, Colors.black54]),
+            ),
+            child: SingleChildScrollView(
+              child: SizedBox(
+                height: height,
+                width: MediaQuery.of(context).size.width,
                 child: LoginForm(
                   formKey: _formKey,
                   height: height,
                 ),
               ),
             ),
-            Positioned(top: 60, left: 10, child: _backButton()),
-          ],
-        ),
+          ),
+          Positioned(top: 60, left: 10, child: _backButton()),
+        ],
       ),
     );
   }

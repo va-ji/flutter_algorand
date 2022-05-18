@@ -1,3 +1,4 @@
+import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/models.dart';
@@ -55,14 +56,12 @@ class UserDataProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void logout(BuildContext context) async {
-    bool response = await API().logout(_accessToken!);
-    if (response || accessToken == null) {
+  Future<void> logout(BuildContext context) async {
+    SignOutResult response = await UserAuth().signOut();
+    String? session = await UserAuth.accessToken;
+    if (session == null || session == '') {
       _userLoggedIn = false;
-      notifyListeners();
-      _accessToken = null;
-      final prefs = await SharedPreferences.getInstance();
-      prefs.clear();
+      // notifyListeners();
       Navigator.pushNamedAndRemoveUntil(
           context, '/welcome', (route) => route.isFirst);
     }

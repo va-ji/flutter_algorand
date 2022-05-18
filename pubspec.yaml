@@ -30,8 +30,17 @@ dependencies:
   path_provider: 2.0.6
   device_info_plus: 3.1.1 
   uuid: 3.0.5
+  image_picker: ^0.8.5
+  pin_code_fields: ^7.3.0
+  crypto: ^3.0.2
+  focused_menu: ^1.0.5
   #algorand
   algorand_dart: ^1.0.3
+  
+  #aws
+  amplify_flutter: ^0.4.0
+  amplify_datastore: ^0.4.0
+  amplify_auth_cognito: ^0.4.0
 
 
   #Icons
@@ -57,6 +66,12 @@ flutter:
   assets:
     - lib/assets/img/logo/logo.jpg
     - lib/assets/charity/rubbishcharity.jpg
+    - lib/assets/charity/charity_1.png
+    - lib/assets/logo/otp.gif
+    - lib/assets/img/background/home_bg.png
+    - lib/assets/charity/avatar.png
+    - lib/assets/charity/avatar1.png
+    - lib/assets/charity/avatar2.png
   #  - images/a_dot_burr.jpeg
   #  - images/a_dot_ham.jpeg
   # An image asset can refer to one or more resolution-specific "variants", see

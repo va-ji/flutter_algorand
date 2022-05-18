@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import '../../constants/constants.dart';
-import '../../helpers/Layout/LayoutHelper.dart';
+import '../../helpers/helpers.dart';
 
 class WelcomePage extends StatefulWidget {
   static String route = '/welcome';
@@ -84,7 +85,7 @@ class _WelcomePageState extends State<WelcomePage> {
     return RichText(
       textAlign: TextAlign.center,
       text: TextSpan(
-          text: 'flutter',
+          text: 'Charity',
           style: GoogleFonts.portLligatSans(
             textStyle: Theme.of(context).textTheme.headline1,
             fontSize: 30,
@@ -93,11 +94,11 @@ class _WelcomePageState extends State<WelcomePage> {
           ),
           children: const [
             TextSpan(
-              text: 'base',
+              text: 'On',
               style: TextStyle(color: Colors.white70, fontSize: 30),
             ),
             TextSpan(
-              text: 'plate',
+              text: 'Blocks',
               style: TextStyle(color: Colors.white, fontSize: 30),
             ),
           ]),
@@ -175,9 +176,9 @@ class _WelcomePageState extends State<WelcomePage> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
+                Colors.deepPurpleAccent,
+                Colors.deepPurpleAccent,
                 Colors.purple,
-                Colors.red,
-                Colors.orange,
               ],
             ),
           ),

@@ -1,0 +1,20 @@
+{
+  "staging": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-charitydapp-staging-113709-authRole",
+      "UnauthRoleArn": "arn:aws:iam::103292566288:role/amplify-charitydapp-staging-113709-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::103292566288:role/amplify-charitydapp-staging-113709-authRole",
+      "Region": "ap-southeast-2",
+      "DeploymentBucketName": "amplify-charitydapp-staging-113709-deployment",
+      "UnauthRoleName": "amplify-charitydapp-staging-113709-unauthRole",
+      "StackName": "amplify-charitydapp-staging-113709",
+      "StackId": "arn:aws:cloudformation:ap-southeast-2:103292566288:stack/amplify-charitydapp-staging-113709/86ed02c0-d055-11ec-a240-061a9080e66c",
+      "AmplifyAppId": "d1q0dcmy31ajat"
+    },
+    "categories": {
+      "auth": {
+        "charitydapp86ec7880": {}
+      }
+    }
+  }
+}
